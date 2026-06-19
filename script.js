@@ -44,6 +44,37 @@ const PLAYER_COLORS  = ["#f5a623", "#4cc9f0", "#f72585", "#7fff6b"];
 const PLAYER_TOKENS  = ["🟡", "🔵", "🔴", "🟢"];
 const DICE_FACES     = ["⚀","⚁","⚂","⚃","⚄","⚅"];
 
+/* ─── Player Sprite Images ───────────────────────────────────────── */
+const SPRITE_PATHS = [
+  "assets/yellow_player.png",
+  "assets/blue_player.png",
+  "assets/red_player.png",
+  "assets/green_player.png",
+];
+const playerSprites = [null, null, null, null]; // loaded Image objects
+
+/* ─── Custom Board Image ─────────────────────────────────────────── */
+// Place your board PNG at assets/board.png  (or change the path below)
+const BOARD_IMAGE_PATH = "assets/board.png";
+let boardImage = null;
+let boardImageLoaded = false;
+
+function preloadBoardImage() {
+  const img = new Image();
+  img.onload  = () => { boardImage = img; boardImageLoaded = true; };
+  img.onerror = () => { boardImage = null; boardImageLoaded = false; }; // fallback to drawn grid
+  img.src = BOARD_IMAGE_PATH;
+}
+
+function preloadSprites() {
+  SPRITE_PATHS.forEach((path, i) => {
+    const img = new Image();
+    img.onload  = () => { playerSprites[i] = img; };
+    img.onerror = () => { playerSprites[i] = null; }; // fallback to circle
+    img.src = path;
+  });
+}
+
 /* ─── Quiz Bank ──────────────────────────────────────────────────── */
 const QUIZ_BANK = [
   { q:"What is 7 × 8?", opts:["54","56","64","48"], ans:1 },
@@ -89,6 +120,8 @@ const CELL = 60; // cell size in px (resized dynamically)
 document.addEventListener("DOMContentLoaded", () => {
   initFirebase();
   initLobbyUI();
+  preloadSprites();
+  preloadBoardImage();
 
   canvas = document.getElementById("board-canvas");
   ctx    = canvas.getContext("2d");
@@ -702,51 +735,52 @@ function drawBoard(state) {
 
   ctx.clearRect(0, 0, totalPx, totalPx);
 
-  /* Draw cells */
-  for (let row = 0; row < BOARD_SIZE; row++) {
-    for (let col = 0; col < BOARD_SIZE; col++) {
-      const tile   = tileNumber(row, col);
-      const { x, y } = tileToXY(tile, cell);
+  if (boardImageLoaded && boardImage) {
+    /* ── PNG board mode: draw image as background, skip grid drawing ── */
+    ctx.drawImage(boardImage, 0, 0, totalPx, totalPx);
+  } else {
+    /* ── Fallback: draw cells programmatically ── */
+    for (let row = 0; row < BOARD_SIZE; row++) {
+      for (let col = 0; col < BOARD_SIZE; col++) {
+        const tile   = tileNumber(row, col);
+        const { x, y } = tileToXY(tile, cell);
 
-      /* Cell background */
-      const isQuiz   = QUIZ_TILES.has(tile);
-      const isSnakeH = Object.keys(SNAKES).map(Number).includes(tile);
-      const isLadderF= Object.keys(LADDERS).map(Number).includes(tile);
+        const isQuiz   = QUIZ_TILES.has(tile);
+        const isSnakeH = Object.keys(SNAKES).map(Number).includes(tile);
+        const isLadderF= Object.keys(LADDERS).map(Number).includes(tile);
 
-      if (isQuiz)   ctx.fillStyle = "#1a2e3d";
-      else if (isSnakeH)  ctx.fillStyle = "#2a1010";
-      else if (isLadderF) ctx.fillStyle = "#102218";
-      else ctx.fillStyle = (row + col) % 2 === 0 ? "#182a1b" : "#1f3523";
+        if (isQuiz)        ctx.fillStyle = "#1a2e3d";
+        else if (isSnakeH) ctx.fillStyle = "#2a1010";
+        else if (isLadderF)ctx.fillStyle = "#102218";
+        else ctx.fillStyle = (row + col) % 2 === 0 ? "#182a1b" : "#1f3523";
 
-      ctx.fillRect(x, y, cell, cell);
+        ctx.fillRect(x, y, cell, cell);
 
-      /* Border */
-      ctx.strokeStyle = "#2d4e32";
-      ctx.lineWidth   = 1;
-      ctx.strokeRect(x + .5, y + .5, cell - 1, cell - 1);
+        ctx.strokeStyle = "#2d4e32";
+        ctx.lineWidth   = 1;
+        ctx.strokeRect(x + .5, y + .5, cell - 1, cell - 1);
 
-      /* Tile number */
-      ctx.fillStyle  = "#5a7a5e";
-      ctx.font       = `bold ${Math.max(8, cell * 0.18)}px system-ui`;
-      ctx.textAlign  = "left";
-      ctx.textBaseline = "top";
-      ctx.fillText(tile, x + 3, y + 2);
+        ctx.fillStyle  = "#5a7a5e";
+        ctx.font       = `bold ${Math.max(8, cell * 0.18)}px system-ui`;
+        ctx.textAlign  = "left";
+        ctx.textBaseline = "top";
+        ctx.fillText(tile, x + 3, y + 2);
 
-      /* Icons for special tiles */
-      const iconSize = cell * 0.38;
-      ctx.font       = `${iconSize}px serif`;
-      ctx.textAlign  = "center";
-      ctx.textBaseline = "middle";
-      if (isQuiz)    ctx.fillText("📚", x + cell/2, y + cell/2);
-      else if (isSnakeH)  ctx.fillText("🐍", x + cell/2, y + cell/2);
-      else if (isLadderF) ctx.fillText("🪜", x + cell/2, y + cell/2);
+        const iconSize = cell * 0.38;
+        ctx.font       = `${iconSize}px serif`;
+        ctx.textAlign  = "center";
+        ctx.textBaseline = "middle";
+        if (isQuiz)        ctx.fillText("📚", x + cell/2, y + cell/2);
+        else if (isSnakeH) ctx.fillText("🐍", x + cell/2, y + cell/2);
+        else if (isLadderF)ctx.fillText("🪜", x + cell/2, y + cell/2);
+      }
     }
+
+    /* Draw snake and ladder paths over grid */
+    drawSnakesAndLadders(cell);
   }
 
-  /* Draw snake paths */
-  drawSnakesAndLadders(cell);
-
-  /* Draw player tokens */
+  /* Draw player tokens on top (always) */
   if (state && state.players) {
     drawPlayerTokens(state.players, cell);
   }
@@ -818,29 +852,54 @@ function drawPlayerTokens(players, cell) {
       const oy = (arr.length > 1 ? offsets[i][1] : 0);
       const cx = x + cell/2 + ox;
       const cy = y + cell/2 + oy;
+      const spriteSize = r * 2.2;
 
-      /* Glow for current turn */
+      /* Glow ring for current-turn player */
       if (Number(idx) === (gameState && gameState.currentTurn)) {
         ctx.beginPath();
-        ctx.arc(cx, cy, r + 3, 0, Math.PI * 2);
-        ctx.fillStyle = p.color + "55";
+        ctx.arc(cx, cy, r + 4, 0, Math.PI * 2);
+        ctx.fillStyle = p.color + "66";
         ctx.fill();
       }
 
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.fillStyle   = p.color;
-      ctx.strokeStyle = "#000";
-      ctx.lineWidth   = 2;
-      ctx.fill();
-      ctx.stroke();
+      const sprite = playerSprites[idx];
+      if (sprite) {
+        /* Draw sprite centred on (cx, cy) */
+        ctx.save();
+        /* Circular clip so sprite fits neatly in the cell */
+        ctx.beginPath();
+        ctx.arc(cx, cy, r + 1, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(sprite,
+          cx - spriteSize / 2,
+          cy - spriteSize / 2,
+          spriteSize,
+          spriteSize
+        );
+        ctx.restore();
 
-      /* Player index label */
-      ctx.fillStyle    = "#000";
-      ctx.font         = `bold ${r * 1.2}px system-ui`;
-      ctx.textAlign    = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(idx + 1, cx, cy);
+        /* Thin coloured border around the sprite */
+        ctx.beginPath();
+        ctx.arc(cx, cy, r + 1, 0, Math.PI * 2);
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth   = 2;
+        ctx.stroke();
+      } else {
+        /* Fallback: coloured circle with player number */
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fillStyle   = p.color;
+        ctx.strokeStyle = "#000";
+        ctx.lineWidth   = 2;
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle    = "#000";
+        ctx.font         = `bold ${r * 1.2}px system-ui`;
+        ctx.textAlign    = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(idx + 1, cx, cy);
+      }
     });
   });
 }
