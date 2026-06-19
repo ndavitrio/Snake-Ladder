@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Snake & Quiz – Multiplayer Board Game</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- Firebase v9 compat (CDN) – works on GitHub Pages, no bundler needed -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════
+       SCREEN 1 – LOBBY
+  ═══════════════════════════════════════════ -->
+  <div id="screen-lobby" class="screen active">
+    <div class="lobby-card">
+      <div class="logo-lockup">
+        <span class="logo-snake">🐍</span>
+        <h1 class="logo-title">Snake &amp; Quiz</h1>
+        <span class="logo-ladder">🪜</span>
+      </div>
+      <p class="lobby-tagline">Roll. Answer. Climb. Win.</p>
+
+      <div class="lobby-tabs">
+        <button class="tab-btn active" data-tab="create">Create Room</button>
+        <button class="tab-btn" data-tab="join">Join Room</button>
+      </div>
+
+      <!-- Create tab -->
+      <div class="tab-panel active" id="tab-create">
+        <label class="field-label">Your Name</label>
+        <input id="create-name" class="field-input" type="text" maxlength="16" placeholder="e.g. Alex" />
+        <label class="field-label">Players (2–4)</label>
+        <div class="player-count-row">
+          <button class="count-btn active" data-count="2">2</button>
+          <button class="count-btn" data-count="3">3</button>
+          <button class="count-btn" data-count="4">4</button>
+        </div>
+        <button id="btn-create" class="btn-primary">Create Room</button>
+      </div>
+
+      <!-- Join tab -->
+      <div class="tab-panel" id="tab-join">
+        <label class="field-label">Your Name</label>
+        <input id="join-name" class="field-input" type="text" maxlength="16" placeholder="e.g. Jordan" />
+        <label class="field-label">Room Code</label>
+        <input id="join-code" class="field-input code-input" type="text" maxlength="6" placeholder="ABC123" />
+        <button id="btn-join" class="btn-primary">Join Room</button>
+      </div>
+
+      <p id="lobby-error" class="lobby-error hidden"></p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SCREEN 2 – WAITING ROOM
+  ═══════════════════════════════════════════ -->
+  <div id="screen-waiting" class="screen">
+    <div class="waiting-card">
+      <h2>Waiting for Players…</h2>
+      <div class="room-code-display">
+        <span class="room-code-label">Room Code</span>
+        <span id="display-room-code" class="room-code-value">------</span>
+        <button id="btn-copy-code" class="btn-copy" title="Copy code">📋</button>
+      </div>
+      <div id="waiting-players" class="waiting-players"></div>
+      <p id="waiting-status" class="waiting-status">Share the code above to invite friends.</p>
+      <button id="btn-start" class="btn-primary hidden">Start Game</button>
+      <button id="btn-leave-lobby" class="btn-secondary">Leave</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SCREEN 3 – GAME
+  ═══════════════════════════════════════════ -->
+  <div id="screen-game" class="screen">
+
+    <!-- Top HUD -->
+    <div class="hud">
+      <div id="hud-room" class="hud-room"></div>
+      <div id="hud-turn" class="hud-turn"></div>
+      <div id="hud-players" class="hud-players"></div>
+    </div>
+
+    <div class="game-layout">
+
+      <!-- Board -->
+      <div class="board-wrapper">
+        <canvas id="board-canvas"></canvas>
+      </div>
+
+      <!-- Right panel -->
+      <div class="side-panel">
+
+        <!-- Dice + action -->
+        <div class="dice-section">
+          <div id="dice-display" class="dice-face">🎲</div>
+          <button id="btn-roll" class="btn-roll" disabled>Roll Dice</button>
+          <p id="roll-status" class="roll-status"></p>
+        </div>
+
+        <!-- Quiz modal (hidden until triggered) -->
+        <div id="quiz-panel" class="quiz-panel hidden">
+          <div class="quiz-badge">📚 Quiz Time!</div>
+          <p id="quiz-question" class="quiz-question"></p>
+          <div id="quiz-options" class="quiz-options"></div>
+          <p id="quiz-result" class="quiz-result hidden"></p>
+        </div>
+
+        <!-- Game log -->
+        <div class="log-section">
+          <div class="log-header">📜 Game Log</div>
+          <div id="game-log" class="game-log"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SCREEN 4 – WINNER
+  ═══════════════════════════════════════════ -->
+  <div id="screen-winner" class="screen">
+    <div class="winner-card">
+      <div class="winner-confetti" id="confetti-container"></div>
+      <div class="winner-trophy">🏆</div>
+      <h2 class="winner-headline">We have a winner!</h2>
+      <p id="winner-name" class="winner-name"></p>
+      <div id="final-leaderboard" class="final-leaderboard"></div>
+      <button id="btn-play-again" class="btn-primary">Play Again</button>
+      <button id="btn-new-room" class="btn-secondary">New Room</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
