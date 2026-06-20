@@ -841,10 +841,10 @@ function drawPlayerTokens(players, cell) {
   Object.entries(groups).forEach(([pos, arr]) => {
     if (Number(pos) === 0) return; // haven't started
     const { x, y } = tileToXY(Number(pos), cell);
-    const r = cell * 0.18;
+    const r = cell * 0.28;
     const offsets = [
-      [-cell*.22, -cell*.22], [cell*.22, -cell*.22],
-      [-cell*.22,  cell*.22], [cell*.22,  cell*.22],
+      [-cell*.24, -cell*.24], [cell*.24, -cell*.24],
+      [-cell*.24,  cell*.24], [cell*.24,  cell*.24],
     ];
 
     arr.forEach(({ idx, p }, i) => {
@@ -852,12 +852,12 @@ function drawPlayerTokens(players, cell) {
       const oy = (arr.length > 1 ? offsets[i][1] : 0);
       const cx = x + cell/2 + ox;
       const cy = y + cell/2 + oy;
-      const spriteSize = r * 2.2;
+      const spriteSize = r * 2.4;
 
       /* Glow ring for current-turn player */
       if (Number(idx) === (gameState && gameState.currentTurn)) {
         ctx.beginPath();
-        ctx.arc(cx, cy, r + 4, 0, Math.PI * 2);
+        ctx.arc(cx, cy, r + 6, 0, Math.PI * 2);
         ctx.fillStyle = p.color + "66";
         ctx.fill();
       }
@@ -882,7 +882,7 @@ function drawPlayerTokens(players, cell) {
         ctx.beginPath();
         ctx.arc(cx, cy, r + 1, 0, Math.PI * 2);
         ctx.strokeStyle = p.color;
-        ctx.lineWidth   = 2;
+        ctx.lineWidth   = 2.5;
         ctx.stroke();
       } else {
         /* Fallback: coloured circle with player number */
@@ -890,7 +890,7 @@ function drawPlayerTokens(players, cell) {
         ctx.arc(cx, cy, r, 0, Math.PI * 2);
         ctx.fillStyle   = p.color;
         ctx.strokeStyle = "#000";
-        ctx.lineWidth   = 2;
+        ctx.lineWidth   = 2.5;
         ctx.fill();
         ctx.stroke();
 
